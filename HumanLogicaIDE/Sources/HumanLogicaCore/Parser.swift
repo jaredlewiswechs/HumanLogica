@@ -149,16 +149,17 @@ public class Parser {
         }
         let name = nameParts.joined(separator: ".")
 
+        var indexExpr: ASTNode? = nil
         if match(.lbracket) {
             advance()
-            _ = try parseExpression()
+            indexExpr = try parseExpression()
             try expect(.rbracket)
         }
 
         try expect(.assign)
         let value = try parseExpression()
         consumeTerminator()
-        return LetStatement(name: name, value: value, line: token.line, col: token.col)
+        return LetStatement(name: name, value: value, index: indexExpr, line: token.line, col: token.col)
     }
 
     private func parseSpeak() throws -> SpeakStatement {

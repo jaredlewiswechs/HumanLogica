@@ -32,5 +32,13 @@ let package = Package(
                 .swiftLanguageMode(.v5),
             ]
         ),
+        .testTarget(
+            name: "HumanLogicaCoreTests",
+            dependencies: ["HumanLogicaCore"],
+            path: "Tests/HumanLogicaCoreTests",
+            swiftSettings: [
+                .swiftLanguageMode(.v5),
+            ]
+        ),
     ]
 )
