@@ -11,6 +11,7 @@ Usage:
     python3 logica.py --check <file>      Check axioms without running
     python3 logica.py --tokens <file>     Show tokenization
     python3 logica.py --ast <file>        Show parsed AST
+    python3 logica.py --js <file> [out]   Transpile to JavaScript
 
 The language where an entire class of bugs — unauthorized access,
 data tampering, ownership violations — cannot exist.
@@ -127,6 +128,57 @@ def show_tokens(filepath: str):
     for token in tokens:
         if token.type.name != 'NEWLINE':
             print(f"  {token}")
+
+
+def transpile_file(filepath: str, output_path: str = None):
+    """Transpile a .logica file to standalone JavaScript."""
+    if not os.path.exists(filepath):
+        print(f"Error: file not found: {filepath}")
+        sys.exit(1)
+
+    with open(filepath, 'r') as f:
+        source = f.read()
+
+    try:
+        # Phase 1: Lex
+        lexer = Lexer(source)
+        tokens = lexer.tokenize()
+
+        # Phase 2: Parse
+        parser = Parser(tokens)
+        ast = parser.parse()
+
+        # Phase 3: Compile (axiom checking)
+        compiler = Compiler()
+        compiler.compile(ast)
+
+        # Phase 4: Transpile to JS
+        from logica.transpiler import JSTranspiler
+        transpiler = JSTranspiler()
+        js_code = transpiler.transpile(ast)
+
+        if output_path is None:
+            output_path = filepath.replace('.logica', '.js')
+
+        with open(output_path, 'w') as f:
+            f.write(js_code)
+
+        print()
+        print("=" * 60)
+        print(f"  Logica JS Transpiler")
+        print("=" * 60)
+        print()
+        print(f"  source:  {os.path.basename(filepath)}")
+        print(f"  output:  {output_path}")
+        print(f"  run:     node {output_path}")
+        print()
+
+    except AxiomViolation as e:
+        print(f"  COMPILE ERROR: {e}")
+        sys.exit(1)
+    except LogicaError as e:
+        print(f"  ERROR: {e}")
+        sys.exit(1)
 
 
 def show_ast(filepath: str):
@@ -315,6 +367,9 @@ def main():
         show_tokens(sys.argv[2])
     elif sys.argv[1] == '--ast' and len(sys.argv) > 2:
         show_ast(sys.argv[2])
+    elif sys.argv[1] == '--js' and len(sys.argv) > 2:
+        out = sys.argv[3] if len(sys.argv) > 3 else None
+        transpile_file(sys.argv[2], out)
     elif sys.argv[1] == '--help':
         print(__doc__)
     else:
