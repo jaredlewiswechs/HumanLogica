@@ -12,6 +12,8 @@ Usage:
     python3 logica.py --tokens <file>     Show tokenization
     python3 logica.py --ast <file>        Show parsed AST
     python3 logica.py --js <file> [out]   Transpile to JavaScript
+    python3 logica.py --c <file> [out]    Transpile to C
+    python3 logica.py --wasm <file> [out] Compile to WebAssembly
 
 The language where an entire class of bugs — unauthorized access,
 data tampering, ownership violations — cannot exist.
@@ -178,6 +180,73 @@ def transpile_file(filepath: str, output_path: str = None):
         sys.exit(1)
     except LogicaError as e:
         print(f"  ERROR: {e}")
+        sys.exit(1)
+
+
+def transpile_c_file(filepath: str, output_path: str = None):
+    """Transpile a .logica file to C source code."""
+    if not os.path.exists(filepath):
+        print(f"Error: file not found: {filepath}")
+        sys.exit(1)
+
+    with open(filepath, 'r') as f:
+        source = f.read()
+
+    try:
+        if output_path is None:
+            output_path = filepath.replace('.logica', '.c')
+
+        from logica.wasm_build import build_c
+        print()
+        print("=" * 60)
+        print(f"  Logica C Transpiler")
+        print("=" * 60)
+        print()
+        print(f"  source:  {os.path.basename(filepath)}")
+        print(f"  output:  {output_path}")
+        build_c(source, output_path)
+        print()
+
+    except AxiomViolation as e:
+        print(f"  COMPILE ERROR: {e}")
+        sys.exit(1)
+    except LogicaError as e:
+        print(f"  ERROR: {e}")
+        sys.exit(1)
+
+
+def compile_wasm_file(filepath: str, output_path: str = None):
+    """Compile a .logica file to WebAssembly."""
+    if not os.path.exists(filepath):
+        print(f"Error: file not found: {filepath}")
+        sys.exit(1)
+
+    with open(filepath, 'r') as f:
+        source = f.read()
+
+    try:
+        if output_path is None:
+            output_path = filepath.replace('.logica', '.wasm')
+
+        from logica.wasm_build import build_wasm
+        print()
+        print("=" * 60)
+        print(f"  Logica WASM Compiler")
+        print("=" * 60)
+        print()
+        print(f"  source:  {os.path.basename(filepath)}")
+        print(f"  output:  {output_path}")
+        build_wasm(source, output_path)
+        print()
+
+    except AxiomViolation as e:
+        print(f"  COMPILE ERROR: {e}")
+        sys.exit(1)
+    except LogicaError as e:
+        print(f"  ERROR: {e}")
+        sys.exit(1)
+    except RuntimeError as e:
+        print(f"  BUILD ERROR: {e}")
         sys.exit(1)
 
 
@@ -370,6 +439,12 @@ def main():
     elif sys.argv[1] == '--js' and len(sys.argv) > 2:
         out = sys.argv[3] if len(sys.argv) > 3 else None
         transpile_file(sys.argv[2], out)
+    elif sys.argv[1] == '--c' and len(sys.argv) > 2:
+        out = sys.argv[3] if len(sys.argv) > 3 else None
+        transpile_c_file(sys.argv[2], out)
+    elif sys.argv[1] == '--wasm' and len(sys.argv) > 2:
+        out = sys.argv[3] if len(sys.argv) > 3 else None
+        compile_wasm_file(sys.argv[2], out)
     elif sys.argv[1] == '--help':
         print(__doc__)
     else:
