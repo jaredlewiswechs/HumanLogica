@@ -12,7 +12,7 @@ struct IDEToolbar: View {
             HStack(spacing: 6) {
                 Image(systemName: "brain.head.profile")
                     .font(.system(size: 16))
-                    .foregroundColor(.accentColor)
+                    .foregroundStyle(.tint)
                 Text("HumanLogica IDE")
                     .font(.system(size: 13, weight: .semibold))
             }
@@ -63,14 +63,14 @@ struct IDEToolbar: View {
 
             // Inspector toggle
             Button(action: { viewModel.showInspector.toggle() }) {
-                Image(systemName: viewModel.showInspector ? "sidebar.right" : "sidebar.right")
+                Image(systemName: "sidebar.right")
                     .font(.system(size: 12))
-                    .foregroundColor(viewModel.showInspector ? .accentColor : .secondary)
+                    .foregroundStyle(viewModel.showInspector ? .tint : .secondary)
             }
             .help("Toggle inspector")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(.bar)
     }
 }

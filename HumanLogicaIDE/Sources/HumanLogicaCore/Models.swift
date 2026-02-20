@@ -4,7 +4,7 @@
 import Foundation
 
 /// A speaker in the system. Every statement has one.
-public class Speaker: Identifiable, Sendable {
+public class Speaker: Identifiable {
     public let id: Int
     public let name: String
     public let createdAt: Date
@@ -23,7 +23,7 @@ public class Speaker: Identifiable, Sendable {
 }
 
 /// One entry in the append-only ledger. Every operation produces one.
-public class LedgerEntry: Identifiable, Sendable {
+public class LedgerEntry: Identifiable {
     public let entryId: Int
     public let speakerId: Int
     public let operation: String
@@ -69,7 +69,7 @@ public class LedgerEntry: Identifiable, Sendable {
 }
 
 /// A request from one speaker to another.
-public class Request: Identifiable, Sendable {
+public class Request: Identifiable {
     public let requestId: Int
     public let fromSpeaker: Int
     public let toSpeaker: Int

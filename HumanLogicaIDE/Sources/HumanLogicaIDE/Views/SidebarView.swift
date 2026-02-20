@@ -30,7 +30,7 @@ struct SidebarView: View {
                 SpeakerInfoView()
             }
         }
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+        .background(Color(white: 0.15).opacity(0.5))
     }
 }
 
@@ -46,7 +46,7 @@ struct FileListView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "doc.text")
                             .font(.system(size: 12))
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(.tint)
 
                         VStack(alignment: .leading) {
                             Text(file.name)
@@ -91,7 +91,7 @@ struct ExampleListView: View {
                     HStack(spacing: 8) {
                         Image(systemName: iconForExample(index))
                             .font(.system(size: 13))
-                            .foregroundColor(colorForExample(index))
+                            .foregroundStyle(colorForExample(index))
                             .frame(width: 20)
 
                         VStack(alignment: .leading, spacing: 2) {
@@ -99,7 +99,7 @@ struct ExampleListView: View {
                                 .font(.system(size: 12, weight: .medium))
                             Text(descriptionForExample(index))
                                 .font(.system(size: 10))
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
                     }
@@ -116,12 +116,11 @@ struct ExampleListView: View {
                     HStack(spacing: 6) {
                         Text("A\(axiom.number)")
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(.tint)
                             .frame(width: 28, alignment: .leading)
 
                         Text(axiom.name)
                             .font(.system(size: 11))
-                            .foregroundColor(.primary)
                     }
                     .padding(.vertical, 2)
                 }
@@ -179,10 +178,9 @@ struct SpeakerInfoView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Speakers are extracted when you run or check a program.")
                 .font(.system(size: 11))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .padding()
 
-            // Parse speakers from source
             let speakers = parseSpeakerNames(from: viewModel.sourceCode)
 
             if !speakers.isEmpty {
@@ -192,7 +190,7 @@ struct SpeakerInfoView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "person.circle")
                                     .font(.system(size: 14))
-                                    .foregroundColor(.accentColor)
+                                    .foregroundStyle(.tint)
 
                                 Text(name)
                                     .font(.system(size: 12, weight: .medium))
@@ -214,7 +212,7 @@ struct SpeakerInfoView: View {
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             if trimmed.hasPrefix("speaker ") {
-                let name = trimmed.dropFirst("speaker ".count).trimmingCharacters(in: .whitespaces)
+                let name = String(trimmed.dropFirst("speaker ".count)).trimmingCharacters(in: .whitespaces)
                 if !name.isEmpty && !names.contains(name) {
                     names.append(name)
                 }

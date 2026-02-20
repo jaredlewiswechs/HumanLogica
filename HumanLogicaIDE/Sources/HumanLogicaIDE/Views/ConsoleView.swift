@@ -12,27 +12,27 @@ struct ConsoleView: View {
             HStack {
                 Image(systemName: "terminal")
                     .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Text("Console")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
 
                 Spacer()
 
                 Text("\(viewModel.consoleLines.count) lines")
                     .font(.system(size: 10))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
 
                 Button(action: { viewModel.clearConsole() }) {
                     Image(systemName: "trash")
                         .font(.system(size: 10))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(.bar)
 
             Divider()
 
@@ -48,7 +48,7 @@ struct ConsoleView: View {
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                 }
-                .onChange(of: viewModel.consoleLines.count) { _, _ in
+                .onChange(of: viewModel.consoleLines.count) {
                     if let last = viewModel.consoleLines.last {
                         proxy.scrollTo(last.id, anchor: .bottom)
                     }
@@ -65,14 +65,13 @@ struct ConsoleLineView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 6) {
-            // Type indicator
             Image(systemName: iconName)
                 .font(.system(size: 9))
-                .foregroundColor(lineColor)
+                .foregroundStyle(lineColor)
                 .frame(width: 12)
 
             Text(line.text)
-                .foregroundColor(lineColor)
+                .foregroundStyle(lineColor)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }

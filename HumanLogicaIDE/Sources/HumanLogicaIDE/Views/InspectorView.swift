@@ -29,7 +29,7 @@ struct InspectorView: View {
                 AxiomReferenceView()
             }
         }
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .background(Color(white: 0.15).opacity(0.3))
     }
 }
 
@@ -40,7 +40,6 @@ struct TokenListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Token action
             HStack {
                 Button("Refresh Tokens") {
                     viewModel.showTokens()
@@ -53,7 +52,7 @@ struct TokenListView: View {
 
                 Text("\(viewModel.displayTokens.count) tokens")
                     .font(.system(size: 10))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             .padding(8)
 
@@ -63,10 +62,10 @@ struct TokenListView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "list.bullet.rectangle")
                         .font(.system(size: 28))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text("Click 'Refresh Tokens' to tokenize")
                         .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -88,16 +87,14 @@ struct TokenRow: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            // Line:col
             Text("L\(token.line):\(token.col)")
                 .font(.system(size: 9, design: .monospaced))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .frame(width: 42, alignment: .leading)
 
-            // Token type badge
             Text(token.type)
                 .font(.system(size: 9, weight: .medium, design: .monospaced))
-                .foregroundColor(colorForTokenType(token.type))
+                .foregroundStyle(colorForTokenType(token.type))
                 .padding(.horizontal, 4)
                 .padding(.vertical, 1)
                 .background(
@@ -106,10 +103,8 @@ struct TokenRow: View {
                 )
                 .frame(width: 80, alignment: .leading)
 
-            // Value
             Text(displayValue(token))
                 .font(.system(size: 10, design: .monospaced))
-                .foregroundColor(.primary)
                 .lineLimit(1)
         }
         .padding(.vertical, 1)
@@ -153,7 +148,7 @@ struct LedgerView: View {
             HStack {
                 Text("Run a program to see the ledger.")
                     .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Spacer()
             }
             .padding(8)
@@ -164,13 +159,13 @@ struct LedgerView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "list.clipboard")
                         .font(.system(size: 28))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text("No ledger entries yet")
                         .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     Text("Run a program to populate the ledger")
                         .font(.system(size: 10))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -180,10 +175,10 @@ struct LedgerView: View {
                             HStack {
                                 Text("#\(entry.id)")
                                     .font(.system(size: 9, design: .monospaced))
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                                 Text(entry.status)
                                     .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                    .foregroundColor(statusColor(entry.status))
+                                    .foregroundStyle(statusColor(entry.status))
                                 Spacer()
                             }
                             Text("\(entry.speakerName): \(entry.action)")
@@ -223,7 +218,7 @@ struct AxiomReferenceView: View {
                         HStack(spacing: 6) {
                             Text("A\(axiom.number)")
                                 .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundColor(.accentColor)
+                                .foregroundStyle(.tint)
                                 .frame(width: 28, alignment: .leading)
 
                             Text(axiom.name)
@@ -232,17 +227,17 @@ struct AxiomReferenceView: View {
 
                         Text(axiom.description)
                             .font(.system(size: 10))
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .padding(.leading, 34)
 
-                        if axiom.enforcement != "" {
+                        if !axiom.enforcement.isEmpty {
                             HStack(spacing: 4) {
                                 Image(systemName: axiom.enforcement == "compile" ? "hammer" : "cpu")
                                     .font(.system(size: 9))
                                 Text(axiom.enforcement == "compile" ? "Compile-time" : "Runtime")
                                     .font(.system(size: 9, weight: .medium))
                             }
-                            .foregroundColor(axiom.enforcement == "compile" ? .purple : .orange)
+                            .foregroundStyle(axiom.enforcement == "compile" ? .purple : .orange)
                             .padding(.leading, 34)
                         }
                     }
