@@ -1,0 +1,83 @@
+# The Demo — Everything Together
+# This is the program that makes people get it.
+#
+# A teacher, a student, an admin.
+# The student owns their work.
+# The teacher owns their grades.
+# The admin can look. They cannot touch.
+# Every action is in the ledger.
+# Every tamper attempt is caught before it runs.
+
+speaker Jared
+speaker Maria
+speaker Admin
+
+# ── Teacher sets up the class ──
+as Jared {
+    let course = "CS 101 — Spring 2026"
+    let assignment_1 = "Build a Calculator"
+    let a1_points = 100
+    speak "Course created: CS 101"
+    speak "Assignment posted: Build a Calculator (100 pts)"
+}
+
+# ── Student submits work ──
+as Maria {
+    # Maria can read the assignment
+    let task = read Jared.assignment_1
+    speak "I see the assignment: Build a Calculator"
+
+    # Maria writes to HER partition
+    let submission = "def calc(a, op, b):\n  if op == '/': return 'Error' if b == 0 else a/b\n  return eval(f'{a}{op}{b}')"
+    let version = 1
+    speak "Submitted: version 1"
+
+    # Maria improves and resubmits
+    let submission = "def calc(a, op, b):\n  ops = {'+': lambda: a+b, '-': lambda: a-b, '*': lambda: a*b, '/': lambda: a/b if b else 'Error'}\n  return ops.get(op, lambda: 'Invalid')()"
+    let version = 2
+    speak "Resubmitted: version 2 (improved)"
+}
+
+# ── Teacher grades ──
+as Jared {
+    # Teacher reads Maria's work (anyone can read)
+    let maria_work = read Maria.submission
+    speak "Reviewing Maria's submission..."
+
+    # Teacher writes grade to TEACHER's partition
+    let grade_maria = 95
+    let feedback_maria = "Excellent. Clean code, handles edge cases."
+    speak "Graded Maria: 95/100"
+}
+
+# ── Maria reads her grade ──
+as Maria {
+    let my_grade = read Jared.grade_maria
+    let my_feedback = read Jared.feedback_maria
+    speak "My grade: 95/100"
+    speak "Feedback: Excellent. Clean code, handles edge cases."
+}
+
+# ── Admin tries to observe ──
+as Admin {
+    # Admin can READ everything (reads are universal)
+    let student_work = read Maria.submission
+    let grade = read Jared.grade_maria
+    speak "Observed: Maria got 95/100"
+
+    # But admin CANNOT write to teacher or student data.
+    # Uncomment below to see the axiom violation:
+    #
+    # let Jared.grade_maria = 70
+    #
+    # Axiom 8: speaker 'Admin' cannot write to 'Jared' variables.
+}
+
+# ── Inspect and verify ──
+as Jared {
+    # Check the ledger
+    verify ledger
+
+    # View variable history — every version is preserved
+    history Maria.submission
+}

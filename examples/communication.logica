@@ -1,0 +1,42 @@
+# Communication — Requests and Responses
+# No speaker can force another to act. (Axiom 7)
+# Communication happens through requests.
+# The target chooses to accept or refuse.
+# Both choices are in the ledger. Permanently.
+
+speaker Teacher
+speaker Student
+
+as Teacher {
+    let assignment = "Linked List Lab"
+    let max_points = 100
+    speak "Assignment posted: Linked List Lab"
+}
+
+as Student {
+    let submission = "class Node: ..."
+    speak "Submitted my linked list"
+}
+
+# Teacher grades
+as Teacher {
+    let grade = 45
+    let feedback = "Incomplete. Missing delete and search."
+    speak "Graded: 45/100"
+}
+
+# Student disputes — sends a request, does not force anything
+as Student {
+    request Teacher "review_grade: I covered all requirements"
+    speak "Grade dispute filed"
+}
+
+# Teacher can accept or refuse — their choice
+as Teacher {
+    respond refuse
+    speak "Dispute refused: Missing error handling for edge cases"
+}
+
+# Both the dispute and the refusal are in the ledger.
+# Neither speaker was forced. Both spoke freely.
+# The record is permanent.

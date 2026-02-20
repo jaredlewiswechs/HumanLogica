@@ -1,0 +1,9 @@
+# Hello World in Logica
+# The simplest program. One speaker. One statement.
+# Every operation has a speaker. Even hello world.
+
+speaker Jared
+
+as Jared {
+    speak "Hello, World!"
+}

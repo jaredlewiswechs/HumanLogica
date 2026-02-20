@@ -1,0 +1,69 @@
+# Axiom Violations — Programs That Cannot Be Expressed
+#
+# This file demonstrates what the compiler catches.
+# Each section shows code that would violate an axiom.
+# Uncomment any section to see the proof checker in action.
+#
+# These are not runtime errors. These are programs that
+# violate the mathematics of Human Logic itself.
+# They cannot be expressed. They do not compile.
+
+# ═══════════════════════════════════════════════════
+# AXIOM 1 — Speaker Requirement
+# "Every operation has a speaker"
+# ═══════════════════════════════════════════════════
+# Uncomment to see:
+#
+# let x = 5
+#
+# Error: Axiom 1 violation — Speaker Requirement:
+# 'LetStatement' requires a speaker context.
+# Wrap code in: as SpeakerName { ... }
+
+# ═══════════════════════════════════════════════════
+# AXIOM 8 — Write Ownership
+# "Only s can write to s's variables"
+# ═══════════════════════════════════════════════════
+# Uncomment to see:
+#
+# speaker Alice
+# speaker Bob
+#
+# as Alice {
+#     let Bob.secret = "stolen"
+# }
+#
+# Error: Axiom 8 violation — Write Ownership:
+# speaker 'Alice' cannot write to 'Bob' variables.
+# This is not a permission. It is math.
+
+# ═══════════════════════════════════════════════════
+# AXIOM 9 — No Infinite Loops
+# "Every loop has a termination path or bound"
+# ═══════════════════════════════════════════════════
+# Uncomment to see:
+#
+# speaker Runner
+#
+# as Runner {
+#     let x = 0
+#     while x >= 0 {
+#         let x = x + 1
+#     }
+# }
+#
+# Error: Axiom 9 violation — No Infinite Loops:
+# every loop must have a 'max N' bound.
+# A commitment that never resolves is not a commitment.
+
+# ═══════════════════════════════════════════════════
+# This file is intentionally valid (all violations commented out).
+# It runs successfully — it just doesn't do anything.
+# ═══════════════════════════════════════════════════
+
+speaker Demo
+
+as Demo {
+    speak "All axiom violation examples are commented out."
+    speak "Uncomment any section and run with --check to see it caught."
+}
