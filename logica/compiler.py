@@ -228,19 +228,21 @@ class Compiler:
         self._check_speaker_context(stmt)
 
         # Check for write ownership violation
+        # Check every segment of the dotted name, not just the first,
+        # to catch cases like 'let bar.SpeakerName.baz = 1'
         name = stmt.name
         if '.' in name:
-            parts = name.split('.', 1)
-            target_speaker = parts[0]
-            if target_speaker in self.declared_speakers and target_speaker != self.current_speaker:
-                raise AxiomViolation(
-                    8, "Write Ownership",
-                    f"speaker '{self.current_speaker}' cannot write to "
-                    f"'{target_speaker}' variables. "
-                    f"Only '{target_speaker}' can write to '{target_speaker}' variables. "
-                    f"This is not a permission. It is math.",
-                    line=stmt.line
-                )
+            parts = name.split('.')
+            for part in parts:
+                if part in self.declared_speakers and part != self.current_speaker:
+                    raise AxiomViolation(
+                        8, "Write Ownership",
+                        f"speaker '{self.current_speaker}' cannot write to "
+                        f"'{part}' variables. "
+                        f"Only '{part}' can write to '{part}' variables. "
+                        f"This is not a permission. It is math.",
+                        line=stmt.line
+                    )
 
         # Check for sealed variable
         sealed_key = f"{self.current_speaker}.{name}"
@@ -438,17 +440,17 @@ class Compiler:
                 self._check_speaker_context(stmt)
                 name = stmt.name
                 if '.' in name:
-                    parts = name.split('.', 1)
-                    target_speaker = parts[0]
-                    if target_speaker in self.declared_speakers and target_speaker != self.current_speaker:
-                        raise AxiomViolation(
-                            8, "Write Ownership",
-                            f"speaker '{self.current_speaker}' cannot write to "
-                            f"'{target_speaker}' variables. "
-                            f"Only '{target_speaker}' can write to '{target_speaker}' variables. "
-                            f"This is not a permission. It is math.",
-                            line=stmt.line
-                        )
+                    parts = name.split('.')
+                    for part in parts:
+                        if part in self.declared_speakers and part != self.current_speaker:
+                            raise AxiomViolation(
+                                8, "Write Ownership",
+                                f"speaker '{self.current_speaker}' cannot write to "
+                                f"'{part}' variables. "
+                                f"Only '{part}' can write to '{part}' variables. "
+                                f"This is not a permission. It is math.",
+                                line=stmt.line
+                            )
                 sealed_key = f"{self.current_speaker}.{name}"
                 if sealed_key in self.sealed_vars:
                     raise AxiomViolation(
