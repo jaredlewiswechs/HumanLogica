@@ -1,0 +1,55 @@
+# Loops and Functions in Logica
+# Every loop MUST have a max bound. (Axiom 9)
+# A commitment that never resolves is not a commitment.
+# Functions are owned by the speaker who defines them.
+
+speaker Mathematician
+
+as Mathematician {
+    # Define a function — owned by Mathematician
+    fn fibonacci(n) {
+        if n <= 0 {
+            return 0
+        }
+        if n == 1 {
+            return 1
+        }
+
+        let prev = 0
+        let curr = 1
+        let i = 2
+
+        while i <= n, max 1000 {
+            let next = prev + curr
+            let prev = curr
+            let curr = next
+            let i = i + 1
+        }
+
+        return curr
+    }
+
+    # Calculate fibonacci numbers
+    let fib_10 = fibonacci(10)
+    speak "fibonacci(10) = 55"
+
+    let fib_20 = fibonacci(20)
+    speak "fibonacci(20) = 6765"
+
+    # Bounded loop — counts to 5
+    let counter = 0
+    while counter < 5, max 100 {
+        let counter = counter + 1
+    }
+    speak "Counted to 5"
+
+    # If you try to write a loop without 'max', it won't compile:
+    #
+    # while true {
+    #     speak "forever"
+    # }
+    #
+    # Axiom 9 violation — No Infinite Loops:
+    # every loop must have a 'max N' bound.
+    # A commitment that never resolves is not a commitment.
+}

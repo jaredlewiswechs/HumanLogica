@@ -1,0 +1,58 @@
+# Ownership Demo — Axiom 8 in Action
+# The program that changes minds.
+#
+# Two speakers. Each owns their data.
+# You can read anything. You can only write your own.
+# This is not a permission. It is math.
+
+speaker Teacher
+speaker Student
+
+# Teacher creates an assignment
+as Teacher {
+    let assignment = "Build a Calculator"
+    let max_points = 100
+    let due_date = "2026-02-24"
+    speak "Assignment posted: Build a Calculator"
+}
+
+# Student does their work
+as Student {
+    # Reading the teacher's data — always allowed
+    let my_task = read Teacher.assignment
+    speak "I see the assignment: Build a Calculator"
+
+    # Writing to own partition — works
+    let submission = "def calc(a, op, b): return eval(f'{a}{op}{b}')"
+    let submitted_at = "2026-02-22 14:30"
+    speak "Submitted my work"
+}
+
+# Teacher grades — writes to TEACHER's partition
+as Teacher {
+    let grade_student = 92
+    let feedback = "Clean code. Handles edge cases."
+    speak "Graded: 92/100"
+}
+
+# Student can READ their grade (anyone can read anything)
+as Student {
+    let my_grade = read Teacher.grade_student
+    speak "My grade: 92/100"
+}
+
+# Now the critical part:
+# If a student tried to write to the teacher's variables,
+# the program would not compile.
+#
+# Uncomment the lines below and run --check to see Axiom 8 in action:
+#
+# as Student {
+#     let Teacher.grade_student = 100
+# }
+#
+# This will produce:
+#   Axiom 8 violation — Write Ownership:
+#   speaker 'Student' cannot write to 'Teacher' variables.
+#   Only 'Teacher' can write to 'Teacher' variables.
+#   This is not a permission. It is math.

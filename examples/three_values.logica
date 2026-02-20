@@ -1,0 +1,49 @@
+# Three-Valued Logic — Axiom 3
+# Not boolean. Not true/false. Active/Inactive/Broken.
+#
+# Active:   condition met, action fulfilled
+# Inactive: condition not met (not failure — just not now)
+# Broken:   condition met, action failed
+#
+# This is how real commitments work.
+# "I'll submit if the deadline hasn't passed."
+# If the deadline passed: inactive. Not failure. Just not applicable.
+# If the deadline hasn't passed but the upload fails: broken.
+
+speaker Student
+
+as Student {
+    let deadline_ok = true
+    let upload_working = true
+
+    # Three-way conditional
+    when deadline_ok {
+        # Active path — condition met
+        speak "Submitting assignment..."
+
+        when upload_working {
+            let status = "submitted"
+            speak "Assignment submitted successfully"
+        } otherwise {
+            speak "Upload system is down"
+        } broken {
+            speak "Something went wrong during upload"
+        }
+    } otherwise {
+        # Inactive path — deadline passed
+        # This is NOT failure. The condition was simply not met.
+        speak "Deadline has passed. Expression is inactive."
+    } broken {
+        # Broken path — condition evaluation itself failed
+        speak "Could not determine deadline status"
+    }
+
+    # Now with a missed deadline
+    let deadline_ok = false
+
+    when deadline_ok {
+        speak "This will not execute"
+    } otherwise {
+        speak "Deadline passed. Inactive. Not broken. Not failed. Inactive."
+    }
+}
