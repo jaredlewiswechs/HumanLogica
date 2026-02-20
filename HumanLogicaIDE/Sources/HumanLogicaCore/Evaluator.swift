@@ -163,8 +163,8 @@ public class Evaluator {
             operation: "loop_bound_exceeded",
             action: expr.action,
             status: .broken,
-            breakReason: "max_iterations_\(maxIter)_exceeded",
-            stateAfter: "iterations:\(count)"
+            stateAfter: "iterations:\(count)",
+            breakReason: "max_iterations_\(maxIter)_exceeded"
         )
         return (.broken, count)
     }
