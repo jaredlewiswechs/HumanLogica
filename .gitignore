@@ -4,3 +4,6 @@ __pycache__/
 # Transpiler output
 *.js
 !logica/js_runtime.js
+# Build artifacts
+wasm/mary_test
+*.wasm

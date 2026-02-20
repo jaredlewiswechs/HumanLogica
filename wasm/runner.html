@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Logica WASM Runner</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #e94560;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        #output {
+            background: #16213e;
+            border: 1px solid #333;
+            padding: 20px;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 200px;
+            border-radius: 4px;
+        }
+        .controls {
+            margin-bottom: 15px;
+        }
+        .controls input[type="file"] {
+            color: #e0e0e0;
+        }
+        .controls button {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: monospace;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .controls button:hover {
+            background: #c73952;
+        }
+        #status {
+            color: #53a653;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Logica WASM Runner</h1>
+    <p class="subtitle">A Programming Language for Human Logic</p>
+
+    <div class="controls">
+        <input type="file" id="wasmFile" accept=".wasm">
+        <button onclick="runWasm()">Run</button>
+        <span id="status"></span>
+    </div>
+
+    <div id="output">Waiting for .wasm file...</div>
+
+    <script>
+    const outputEl = document.getElementById('output');
+    const statusEl = document.getElementById('status');
+    let wasmBytes = null;
+
+    document.getElementById('wasmFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            wasmBytes = ev.target.result;
+            statusEl.textContent = `Loaded: ${file.name} (${(wasmBytes.byteLength / 1024).toFixed(1)}KB)`;
+            runWasm();
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    async function runWasm() {
+        if (!wasmBytes) {
+            statusEl.textContent = 'No .wasm file loaded';
+            return;
+        }
+
+        outputEl.textContent = '';
+        statusEl.textContent = 'Running...';
+
+        let instance;
+
+        // WASI shim — captures stdout/stderr
+        const wasi = {
+            fd_write(fd, iovs_ptr, iovs_count, nwritten_ptr) {
+                let written = 0;
+                const mem = new DataView(instance.exports.memory.buffer);
+                for (let i = 0; i < iovs_count; i++) {
+                    const ptr = mem.getUint32(iovs_ptr + i * 8, true);
+                    const len = mem.getUint32(iovs_ptr + i * 8 + 4, true);
+                    const bytes = new Uint8Array(instance.exports.memory.buffer, ptr, len);
+                    outputEl.textContent += new TextDecoder().decode(bytes);
+                    written += len;
+                }
+                mem.setUint32(nwritten_ptr, written, true);
+                return 0;
+            },
+            fd_close() { return 0; },
+            fd_seek() { return 0; },
+            fd_read() { return 0; },
+            fd_prestat_get() { return 8; },  /* EBADF */
+            fd_prestat_dir_name() { return 8; },
+            fd_fdstat_get(fd, buf) {
+                if (!instance) return 8;
+                const mem = new DataView(instance.exports.memory.buffer);
+                /* filetype: regular file */
+                mem.setUint8(buf, 4);
+                /* flags */
+                mem.setUint16(buf + 2, 0, true);
+                /* rights_base (all) */
+                mem.setBigUint64(buf + 8, BigInt("0xffffffffffffffff"), true);
+                /* rights_inheriting */
+                mem.setBigUint64(buf + 16, BigInt("0xffffffffffffffff"), true);
+                return 0;
+            },
+            proc_exit(code) {
+                outputEl.textContent += `\n[exit: ${code}]`;
+            },
+            environ_sizes_get(count_ptr, size_ptr) {
+                if (!instance) return 0;
+                const mem = new DataView(instance.exports.memory.buffer);
+                mem.setUint32(count_ptr, 0, true);
+                mem.setUint32(size_ptr, 0, true);
+                return 0;
+            },
+            environ_get() { return 0; },
+            args_sizes_get(argc_ptr, argv_buf_size_ptr) {
+                if (!instance) return 0;
+                const mem = new DataView(instance.exports.memory.buffer);
+                mem.setUint32(argc_ptr, 0, true);
+                mem.setUint32(argv_buf_size_ptr, 0, true);
+                return 0;
+            },
+            args_get() { return 0; },
+            clock_time_get(id, precision, out) {
+                if (!instance) return 0;
+                const mem = new DataView(instance.exports.memory.buffer);
+                const now = BigInt(Date.now()) * BigInt(1000000);
+                mem.setBigUint64(out, now, true);
+                return 0;
+            },
+        };
+
+        try {
+            const result = await WebAssembly.instantiate(wasmBytes, {
+                wasi_snapshot_preview1: wasi,
+            });
+            instance = result.instance;
+            instance.exports._start();
+            statusEl.textContent = 'Done.';
+        } catch (err) {
+            outputEl.textContent += `\nError: ${err.message}`;
+            statusEl.textContent = 'Error';
+        }
+    }
+
+    // Auto-load program.wasm if served alongside this file
+    fetch('program.wasm').then(r => {
+        if (r.ok) return r.arrayBuffer();
+        return null;
+    }).then(buf => {
+        if (buf) {
+            wasmBytes = buf;
+            statusEl.textContent = `Loaded: program.wasm (${(buf.byteLength / 1024).toFixed(1)}KB)`;
+            runWasm();
+        }
+    }).catch(() => {});
+    </script>
+</body>
+</html>
