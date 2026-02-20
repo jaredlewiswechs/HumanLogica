@@ -206,7 +206,9 @@ public class Compiler {
             )
         }
 
-        emit(.writeVar, args: ["name": name, "value_ast": stmt.value], line: stmt.line)
+        var args: [String: Any] = ["name": name, "value_ast": stmt.value]
+        if let idx = stmt.index { args["index_ast"] = idx }
+        emit(.writeVar, args: args, line: stmt.line)
     }
 
     private func compileSpeak(_ stmt: SpeakStatement) throws {
@@ -236,6 +238,12 @@ public class Compiler {
             "elif_clauses": stmt.elifClauses,
             "else_body": stmt.elseBody,
         ], line: stmt.line)
+
+        try checkBlockAxioms(stmt.body)
+        for clause in stmt.elifClauses {
+            try checkBlockAxioms(clause.body)
+        }
+        try checkBlockAxioms(stmt.elseBody)
     }
 
     private func compileWhile(_ stmt: WhileLoop) throws {
@@ -255,6 +263,8 @@ public class Compiler {
             "body": stmt.body,
             "max_ast": stmt.maxIterations as Any,
         ], line: stmt.line)
+
+        try checkBlockAxioms(stmt.body)
     }
 
     private func compileFn(_ stmt: FnDecl) throws {
@@ -267,6 +277,8 @@ public class Compiler {
             "params": stmt.params,
             "body": stmt.body,
         ], line: stmt.line)
+
+        try checkBlockAxioms(stmt.body)
     }
 
     private func compileReturn(_ stmt: ReturnStatement) throws {

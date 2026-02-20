@@ -96,6 +96,30 @@ public class Runtime {
             )
         }
 
+        // Handle indexed assignment: let arr[idx] = value
+        if let indexAst = op.args["index_ast"] as? ASTNode {
+            let idx = try evalExpr(indexAst)
+            let existing = resolveIdentifier(name)
+            if var arr = existing as? [Any], let i = idx as? Int, i >= 0 && i < arr.count {
+                arr[i] = value as Any
+                if !env.localScopes.isEmpty {
+                    env.localScopes[env.localScopes.count - 1][name] = arr
+                    env.mary.write(callerId: sid, varName: "local.\(name)", value: arr as Any)
+                } else {
+                    env.mary.write(callerId: sid, varName: name, value: arr as Any)
+                }
+            } else if var dict = existing as? [String: Any], let k = idx as? String {
+                dict[k] = value as Any
+                if !env.localScopes.isEmpty {
+                    env.localScopes[env.localScopes.count - 1][name] = dict
+                    env.mary.write(callerId: sid, varName: "local.\(name)", value: dict as Any)
+                } else {
+                    env.mary.write(callerId: sid, varName: name, value: dict as Any)
+                }
+            }
+            return
+        }
+
         if !env.localScopes.isEmpty {
             env.localScopes[env.localScopes.count - 1][name] = value
             env.mary.write(callerId: sid, varName: "local.\(name)", value: value as Any)
@@ -510,14 +534,20 @@ public class Runtime {
         case "-":
             if let l = left as? Int, let r = right as? Int { return l - r }
             if let l = left as? Double, let r = right as? Double { return l - r }
+            if let l = left as? Int, let r = right as? Double { return Double(l) - r }
+            if let l = left as? Double, let r = right as? Int { return l - Double(r) }
             return nil
         case "*":
             if let l = left as? Int, let r = right as? Int { return l * r }
             if let l = left as? Double, let r = right as? Double { return l * r }
+            if let l = left as? Int, let r = right as? Double { return Double(l) * r }
+            if let l = left as? Double, let r = right as? Int { return l * Double(r) }
             return nil
         case "/":
             if let l = left as? Int, let r = right as? Int, r != 0 { return l / r }
             if let l = left as? Double, let r = right as? Double, r != 0 { return l / r }
+            if let l = left as? Int, let r = right as? Double, r != 0 { return Double(l) / r }
+            if let l = left as? Double, let r = right as? Int, r != 0 { return l / Double(r) }
             return nil
         case "%":
             if let l = left as? Int, let r = right as? Int, r != 0 { return l % r }
@@ -527,18 +557,26 @@ public class Runtime {
         case "<":
             if let l = left as? Int, let r = right as? Int { return l < r }
             if let l = left as? Double, let r = right as? Double { return l < r }
+            if let l = left as? Int, let r = right as? Double { return Double(l) < r }
+            if let l = left as? Double, let r = right as? Int { return l < Double(r) }
             return false
         case ">":
             if let l = left as? Int, let r = right as? Int { return l > r }
             if let l = left as? Double, let r = right as? Double { return l > r }
+            if let l = left as? Int, let r = right as? Double { return Double(l) > r }
+            if let l = left as? Double, let r = right as? Int { return l > Double(r) }
             return false
         case "<=":
             if let l = left as? Int, let r = right as? Int { return l <= r }
             if let l = left as? Double, let r = right as? Double { return l <= r }
+            if let l = left as? Int, let r = right as? Double { return Double(l) <= r }
+            if let l = left as? Double, let r = right as? Int { return l <= Double(r) }
             return false
         case ">=":
             if let l = left as? Int, let r = right as? Int { return l >= r }
             if let l = left as? Double, let r = right as? Double { return l >= r }
+            if let l = left as? Int, let r = right as? Double { return Double(l) >= r }
+            if let l = left as? Double, let r = right as? Int { return l >= Double(r) }
             return false
         case "and": return isTruthy(left) && isTruthy(right)
         case "or": return isTruthy(left) || isTruthy(right)
@@ -573,9 +611,11 @@ public class Runtime {
         var fnDef = env.functions[fnKey]
 
         if fnDef == nil {
-            for (key, val) in env.functions {
+            // Search other speakers' functions, but prefer deterministic order
+            // by sorting keys to satisfy Axiom 6 (deterministic evaluation)
+            for key in env.functions.keys.sorted() {
                 if key.hasSuffix(".\(fnName)") {
-                    fnDef = val
+                    fnDef = env.functions[key]
                     break
                 }
             }
@@ -616,8 +656,10 @@ public class Runtime {
 
         switch stmt {
         case let s as LetStatement:
+            var args: [String: Any] = ["name": s.name, "value_ast": s.value]
+            if let idx = s.index { args["index_ast"] = idx }
             try opWriteVar(Operation(op: .writeVar, speaker: env.currentSpeaker,
-                                     args: ["name": s.name, "value_ast": s.value], line: s.line))
+                                     args: args, line: s.line))
         case let s as SpeakStatement:
             try opSpeakOutput(Operation(op: .speakOutput, speaker: env.currentSpeaker,
                                         args: ["value_ast": s.value], line: s.line))
@@ -773,6 +815,8 @@ public class Runtime {
         guard let a = a, let b = b else { return false }
         if let la = a as? Int, let lb = b as? Int { return la == lb }
         if let la = a as? Double, let lb = b as? Double { return la == lb }
+        if let la = a as? Int, let lb = b as? Double { return Double(la) == lb }
+        if let la = a as? Double, let lb = b as? Int { return la == Double(lb) }
         if let la = a as? String, let lb = b as? String { return la == lb }
         if let la = a as? Bool, let lb = b as? Bool { return la == lb }
         return false

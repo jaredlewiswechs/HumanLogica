@@ -67,14 +67,16 @@ public class AsBlock: ASTNode {
 
 // MARK: - Statements
 
-/// let name = expr
+/// let name = expr  /  let name[index] = expr
 public class LetStatement: ASTNode {
     public let name: String
     public let value: ASTNode
+    public let index: ASTNode?
 
-    public init(name: String, value: ASTNode, line: Int = 0, col: Int = 0) {
+    public init(name: String, value: ASTNode, index: ASTNode? = nil, line: Int = 0, col: Int = 0) {
         self.name = name
         self.value = value
+        self.index = index
         super.init(line: line, col: col)
     }
 }
