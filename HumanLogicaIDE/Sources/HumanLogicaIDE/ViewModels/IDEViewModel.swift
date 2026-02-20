@@ -4,6 +4,10 @@
 import SwiftUI
 import HumanLogicaCore
 
+#if canImport(AppKit)
+import AppKit
+#endif
+
 /// Represents a file open in the editor.
 public struct EditorFile: Identifiable, Hashable {
     public let id = UUID()
@@ -91,7 +95,6 @@ public class IDEViewModel: ObservableObject {
     // MARK: - Status
     @Published public var isRunning: Bool = false
     @Published public var statusMessage: String = "Ready"
-    @Published public var lastRuntime: Runtime?
 
     // MARK: - Example Programs
     public let examplePrograms: [(name: String, source: String)] = [
@@ -256,7 +259,6 @@ public class IDEViewModel: ObservableObject {
     // MARK: - Initialization
 
     public init() {
-        // Start with the hello world example
         let hello = examplePrograms[0]
         let file = EditorFile(name: hello.name + ".logica", content: hello.source)
         files = [file]
@@ -286,7 +288,6 @@ public class IDEViewModel: ObservableObject {
     }
 
     public func selectFile(_ file: EditorFile) {
-        // Save current content to current file
         if let currentId = activeFileId,
            let idx = files.firstIndex(where: { $0.id == currentId }) {
             files[idx].content = sourceCode
@@ -312,7 +313,7 @@ public class IDEViewModel: ObservableObject {
         panel.message = "Open a .logica file"
 
         if panel.runModal() == .OK, let url = panel.url {
-            if let content = try? String(contentsOf: url) {
+            if let content = try? String(contentsOf: url, encoding: .utf8) {
                 let file = EditorFile(name: url.lastPathComponent, content: content, url: url)
                 files.append(file)
                 activeFileId = file.id
@@ -359,29 +360,26 @@ public class IDEViewModel: ObservableObject {
 
         let source = sourceCode
 
-        // Run on background thread to keep UI responsive
-        Task.detached { [weak self] in
-            let result = runLogicaProgram(source: source, quiet: true)
+        Task {
+            let result = await Task.detached {
+                runLogicaProgram(source: source, quiet: true)
+            }.value
 
-            await MainActor.run {
-                guard let self = self else { return }
-
-                if let error = result.error {
-                    self.appendError(error.description)
-                    self.statusMessage = "Error"
-                } else {
-                    for line in result.output {
-                        self.appendOutput(line)
-                    }
-                    if result.output.isEmpty {
-                        self.appendSystem("Program completed with no output.")
-                    }
-                    self.statusMessage = "Completed"
+            if let error = result.error {
+                appendError(error.description)
+                statusMessage = "Error"
+            } else {
+                for line in result.output {
+                    appendOutput(line)
                 }
-
-                self.isRunning = false
-                self.appendSystem("--- End ---")
+                if result.output.isEmpty {
+                    appendSystem("Program completed with no output.")
+                }
+                statusMessage = "Completed"
             }
+
+            isRunning = false
+            appendSystem("--- End ---")
         }
     }
 

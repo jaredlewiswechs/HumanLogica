@@ -15,7 +15,6 @@ struct HumanLogicaIDEApp: App {
                 .environmentObject(viewModel)
                 .frame(minWidth: 900, minHeight: 600)
         }
-        .windowStyle(.titleBar)
         .defaultSize(width: 1200, height: 800)
         .commands {
             CommandGroup(replacing: .newItem) {
