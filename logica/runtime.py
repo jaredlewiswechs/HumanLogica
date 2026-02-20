@@ -184,7 +184,6 @@ class Runtime:
                 # Log as active
                 self.env.mary.submit(
                     speaker_id=sid,
-                    condition=lambda: True,
                     condition_label="when:active",
                     action="when_block",
                     action_fn=lambda: True,
@@ -193,7 +192,6 @@ class Runtime:
                 # Action failed — broken path
                 self.env.mary.submit(
                     speaker_id=sid,
-                    condition=lambda: True,
                     condition_label="when:broken",
                     action="when_block",
                     action_fn=lambda: False,
@@ -214,7 +212,6 @@ class Runtime:
             # Broken — condition evaluation itself failed
             self.env.mary.submit(
                 speaker_id=sid,
-                condition=lambda: True,
                 condition_label="when:broken",
                 action="when_block",
                 action_fn=lambda: False,
@@ -284,7 +281,6 @@ class Runtime:
         # Bound exceeded — broken
         self.env.mary.submit(
             speaker_id=sid,
-            condition=lambda: True,
             condition_label="loop:bound_exceeded",
             action=f"loop:max={max_iter}",
             action_fn=lambda: False,
@@ -455,7 +451,6 @@ class Runtime:
         sid = self.env.current_speaker_id
         self.env.mary.submit(
             speaker_id=sid,
-            condition=lambda: True,
             condition_label="fail",
             action=f"fail:{reason}",
             action_fn=lambda: False,
@@ -654,42 +649,27 @@ class Runtime:
     # ── Statement Execution (for blocks) ──────────────────────────────
 
     def _execute_statement(self, stmt):
-        """Execute an AST statement node directly (for blocks in when/if/while/fn)."""
+        """
+        Execute an AST statement node directly (for blocks in when/if/while/fn).
+
+        Delegates to operation handlers via _execute_op to maintain a single
+        evaluation path. This prevents logic drift between block execution
+        and top-level operation handling.
+        """
         if self.env.returning:
             return
 
         if isinstance(stmt, LetStatement):
-            name = stmt.name
-            value = self._eval_expr(stmt.value)
-            sid = self.env.current_speaker_id
-
-            # Check seal
-            seal_key = f"{self.env.current_speaker}.{name}"
-            if seal_key in self.env.sealed:
-                raise RuntimeError_(
-                    f"variable '{name}' is sealed",
-                    self.env.current_speaker
-                )
-
-            if self.env.local_scopes:
-                self.env.local_scopes[-1][name] = value
-            if sid is not None:
-                self.env.mary.write(sid, name, value)
+            op = Operation(op=OpType.WRITE_VAR, speaker=self.env.current_speaker,
+                           args={"name": stmt.name, "value_ast": stmt.value},
+                           line=stmt.line)
+            self._op_write_var(op)
 
         elif isinstance(stmt, SpeakStatement):
-            value = self._eval_expr(stmt.value)
-            sid = self.env.current_speaker_id
-            output = f"  [{self.env.current_speaker}] {value}"
-            self.env.output.append(output)
-            if not self.quiet:
-                print(output)
-            if sid:
-                self.env.mary.submit(
-                    speaker_id=sid,
-                    condition_label="speak",
-                    action=f"speak:{repr(value)}",
-                    action_fn=lambda: True,
-                )
+            op = Operation(op=OpType.SPEAK_OUTPUT, speaker=self.env.current_speaker,
+                           args={"value_ast": stmt.value},
+                           line=stmt.line)
+            self._op_speak_output(op)
 
         elif isinstance(stmt, WhenBlock):
             self._exec_when(stmt)
@@ -701,29 +681,26 @@ class Runtime:
             self._exec_while(stmt)
 
         elif isinstance(stmt, ReturnStatement):
-            if stmt.value:
-                self.env.return_value = self._eval_expr(stmt.value)
-            self.env.returning = True
+            op = Operation(op=OpType.RETURN, speaker=self.env.current_speaker,
+                           args={"value_ast": stmt.value},
+                           line=stmt.line)
+            self._op_return(op)
 
         elif isinstance(stmt, ExpressionStatement):
             self._eval_expr(stmt.expression)
 
         elif isinstance(stmt, RequestStatement):
-            target_id = self.env.speaker_ids.get(stmt.target)
-            action = str(self._eval_expr(stmt.action))
-            if target_id and self.env.current_speaker_id:
-                self.env.mary.request(
-                    self.env.current_speaker_id, target_id, action
-                )
-                if not self.quiet:
-                    print(f"  [{self.env.current_speaker}] request -> {stmt.target}: {action}")
+            op = Operation(op=OpType.REQUEST, speaker=self.env.current_speaker,
+                           args={"target": stmt.target, "action_ast": stmt.action,
+                                 "data_ast": getattr(stmt, 'data', None)},
+                           line=stmt.line)
+            self._op_request(op)
 
         elif isinstance(stmt, RespondStatement):
-            sid = self.env.current_speaker_id
-            pending = self.env.mary.pending_requests(sid)
-            if pending:
-                req = pending[0]
-                self.env.mary.respond(sid, req.request_id, stmt.accept)
+            op = Operation(op=OpType.RESPOND, speaker=self.env.current_speaker,
+                           args={"accept": stmt.accept},
+                           line=stmt.line)
+            self._op_respond(op)
 
         elif isinstance(stmt, InspectStatement):
             op = Operation(op=OpType.INSPECT, speaker=self.env.current_speaker,
@@ -745,27 +722,26 @@ class Runtime:
             self._op_ledger_verify(op)
 
         elif isinstance(stmt, SealStatement):
-            seal_key = f"{self.env.current_speaker}.{stmt.target}"
-            self.env.sealed.add(seal_key)
-            if not self.quiet:
-                print(f"  [{self.env.current_speaker}] sealed: {stmt.target}")
+            op = Operation(op=OpType.SEAL, speaker=self.env.current_speaker,
+                           args={"name": stmt.target},
+                           line=stmt.line)
+            self._op_seal(op)
 
         elif isinstance(stmt, FnDecl):
-            fn_key = f"{self.env.current_speaker}.{stmt.name}"
-            self.env.functions[fn_key] = {
-                "params": stmt.params,
-                "body": stmt.body,
-                "speaker": self.env.current_speaker,
-            }
+            op = Operation(op=OpType.FN_DEFINE, speaker=self.env.current_speaker,
+                           args={"name": stmt.name, "params": stmt.params,
+                                 "body": stmt.body},
+                           line=stmt.line)
+            self._op_fn_define(op)
 
         elif isinstance(stmt, PassStatement):
             pass
 
         elif isinstance(stmt, FailStatement):
-            reason = "explicit fail"
-            if stmt.reason:
-                reason = str(self._eval_expr(stmt.reason))
-            raise RuntimeError_(reason, self.env.current_speaker)
+            op = Operation(op=OpType.FAIL, speaker=self.env.current_speaker,
+                           args={"reason_ast": stmt.reason},
+                           line=stmt.line)
+            self._op_fail(op)
 
     def _exec_when(self, stmt: WhenBlock):
         """Execute a when block directly."""

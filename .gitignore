@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 *.pyo
+# Transpiler output
+*.js
+!logica/js_runtime.js
